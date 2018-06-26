@@ -431,7 +431,6 @@ class CreateUserAPISchema(JSONSchema):
         'required': [
             'authority',
             'username',
-            'email',
         ],
     }
 
