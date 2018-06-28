@@ -6,29 +6,74 @@ import pytest
 
 from elasticsearch1 import RequestsHttpConnection
 
-from h.search.client import get_client
-from h.search.client import Client
+from h.search.client import get_client, get_es6_client
+from h.search.client import Client, Elasticsearch6Client
 
 
 class TestClient(object):
 
-    def test_it_sets_the_index_and_conn_properties(self):
+    def test_it_sets_the_index_and_conn_properties(self, Client):
         client = Client(host="http://localhost:9200", index="hypothesis")
 
         assert client.index == "hypothesis"
         assert client.conn
 
-    def test_index_is_read_only(self):
+    def test_index_is_read_only(self, Client):
         client = Client(host="http://localhost:9200", index="hypothesis")
 
         with pytest.raises(AttributeError, match="can't set attribute"):
             client.index = "changed"
 
-    def test_conn_is_read_only(self):
+    def test_conn_is_read_only(self, Client):
         client = Client(host="http://localhost:9200", index="hypothesis")
 
         with pytest.raises(AttributeError, match="can't set attribute"):
             client.conn = "changed"
+
+    def test_sets_using_es6(self, Client):
+        client = Client(host="http://localhost:9200", index="hypothesis")
+
+        assert client.using_es6 is isinstance(client, Elasticsearch6Client)
+
+    @pytest.fixture(params=[Client, Elasticsearch6Client])
+    def Client(self, request):
+        return request.param
+
+
+class TestGetES6Client(object):
+    def test_initializes_client_with_host(self, settings, patched_client):
+        get_es6_client(settings)
+        args, _ = patched_client.call_args
+        assert args[0] == 'http://elastic6'
+
+    def test_initializes_client_with_index(self, settings, patched_client):
+        get_es6_client(settings)
+        args, _ = patched_client.call_args
+        assert args[1] == 'my-index'
+
+    @pytest.mark.parametrize('key,value,settingkey', [
+        ('max_retries', 7, 'es.client.max_retries'),
+        ('retry_on_timeout', True, 'es.client.retry_on_timeout'),
+        ('timeout', 15, 'es.client.timeout'),
+        ('maxsize', 4, 'es.client_poolsize'),
+    ])
+    def test_client_configuration(self, settings, patched_client, key, value, settingkey):
+        settings[settingkey] = value
+        get_es6_client(settings)
+
+        _, kwargs = patched_client.call_args
+        assert kwargs[key] == value
+
+    @pytest.fixture
+    def settings(self):
+        return {
+            'es.url': 'http://elastic6',
+            'es.index': 'my-index',
+        }
+
+    @pytest.fixture
+    def patched_client(self, patch):
+        return patch('h.search.client.Elasticsearch6Client')
 
 
 class TestGetClient(object):
