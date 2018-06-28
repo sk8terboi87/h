@@ -27,6 +27,26 @@ class TestReindexCommand(object):
         return index.reindex
 
 
+class TestReindexES6Command(object):
+    @pytest.mark.usefixtures('reindex')
+    def test_it_raises_timeout(self, cli, cliconfig):
+        cli.invoke(search.reindex_es6, [], obj=cliconfig)
+        assert os.getenv('ELASTICSEARCH_CLIENT_TIMEOUT') == '30'
+
+    def test_calls_reindex(self, cli, cliconfig, pyramid_request, reindex):
+        result = cli.invoke(search.reindex_es6, [], obj=cliconfig)
+
+        assert result.exit_code == 0
+        reindex.assert_called_once_with(pyramid_request.db,
+                                        pyramid_request.es6,
+                                        pyramid_request)
+
+    @pytest.fixture
+    def reindex(self, patch):
+        index = patch('h.cli.commands.search.indexer')
+        return index.reindex
+
+
 class TestUpdateSettingsCommand(object):
     def test_calls_update_index_settings(self, cli, cliconfig, pyramid_request, update_index_settings):
         result = cli.invoke(search.update_settings, [], obj=cliconfig)
@@ -51,4 +71,5 @@ class TestUpdateSettingsCommand(object):
 @pytest.fixture
 def cliconfig(pyramid_request):
     pyramid_request.es = mock.sentinel.es
+    pyramid_request.es6 = mock.sentinel.es6
     return {'bootstrap': mock.Mock(return_value=pyramid_request)}
