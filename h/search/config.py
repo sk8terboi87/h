@@ -18,6 +18,10 @@ from elasticsearch1.exceptions import NotFoundError, RequestError
 
 log = logging.getLogger(__name__)
 
+# Elasticsearch mapping type for annotations for ES 1.x.
+#
+# These definition includes a number of legacy fields which don't need to be
+# indexed for historical reasons.
 ANNOTATION_MAPPING = {
     '_id': {'path': 'id'},
     '_source': {'excludes': ['id']},
@@ -105,6 +109,72 @@ ANNOTATION_MAPPING = {
     }
 }
 
+# Elasticsearch type mapping for annotations for ES 6.x and later.
+# This mapping does not include the legacy fields from the ES 1.x mapping.
+ES6_ANNOTATION_MAPPING = {
+    # Ignore unknown fields and do not add them to the mapping.
+    # This ensures that only fields included in the "properties" section
+    # here can be searched against.
+    'dynamic': False,
+
+    # Indexed (searchable) fields.
+    'properties': {
+        'authority': {'type': 'keyword'},
+        'created': {'type': 'date'},
+        'deleted': {'type': 'boolean'},
+        'document': {
+            'enabled': False,  # not indexed
+        },
+        'group': {'type': 'keyword'},
+        'id': {'type': 'keyword'},
+        'quote': {'type': 'text', 'analyzer': 'uni_normalizer'},
+        'references': {'type': 'keyword'},
+        'shared': {'type': 'boolean'},
+        'tags': {'type': 'text', 'analyzer': 'uni_normalizer'},
+        'tags_raw': {'type': 'keyword'},
+        'text': {'type': 'text', 'analyzer': 'uni_normalizer'},
+        'target': {
+            'properties': {
+                'source': {
+                    'type': 'text',
+                    'analyzer': 'uri',
+                    'copy_to': ['uri'],
+                },
+                # We store the 'scope' unanalyzed and only do term filters
+                # against this field.
+                'scope': {
+                    'type': 'keyword',
+                },
+                'selector': {
+                    'properties': {
+                        # Open Annotation TextQuoteSelector
+                        'exact': {
+                            'copy_to': 'quote',
+                            'type': 'text',
+                            'index': False,
+                        },
+                    }
+                }
+            }
+        },
+        'thread_ids': {'type': 'keyword'},
+        'updated': {'type': 'date'},
+        'uri': {
+            'type': 'text',
+            'analyzer': 'uri',
+            'fields': {
+                'parts': {
+                    'type': 'text',
+                    'analyzer': 'uri_parts',
+                },
+            },
+        },
+        'user': {'type': 'text', 'analyzer': 'user'},
+        'user_raw': {'type': 'keyword'},
+    }
+}
+
+# Filter and tokenizer definitions shared by ES 1.x and ES 6.x mappings.
 ANALYSIS_SETTINGS = {
     'char_filter': {
         'strip_scheme': {
@@ -180,9 +250,7 @@ def configure_index(client):
     index_name = client.index + '-' + _random_id()
 
     client.conn.indices.create(index_name, body={
-        'mappings': {
-            client.t.annotation: ANNOTATION_MAPPING,
-        },
+        'mappings': _get_mappings(client),
         'settings': {
             'analysis': ANALYSIS_SETTINGS,
         },
@@ -235,9 +303,10 @@ def update_index_settings(client):
     the index cannot be updated without reindexing.
     """
     index = get_aliased_index(client)
+
+    mappings = _get_mappings(client)
     _update_index_analysis(client.conn, index, ANALYSIS_SETTINGS)
-    _update_index_mappings(client.conn, index,
-                           {client.t.annotation: ANNOTATION_MAPPING})
+    _update_index_mappings(client.conn, index, mappings)
 
 
 def _ensure_icu_plugin(conn):
@@ -289,3 +358,13 @@ def _update_index_mappings(conn, name, mappings):
 def _random_id():
     """Generate a short random hex string."""
     return binascii.hexlify(os.urandom(4)).decode()
+
+
+def _get_mappings(client):
+    """Return the document type mappings appropriate for a given ES version."""
+    mappings = {}
+    if client.using_es6:
+        mappings = {client.t.annotation: ES6_ANNOTATION_MAPPING}
+    else:
+        mappings = {client.t.annotation: ANNOTATION_MAPPING}
+    return mappings
