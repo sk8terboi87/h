@@ -6,7 +6,7 @@ from elasticsearch1 import Elasticsearch, RequestsHttpConnection
 from elasticsearch import Elasticsearch as Elasticsearch6
 from requests_aws4auth import AWS4Auth
 
-# TODO - Can we remove this?
+# TODO - Can we remove this? - i would say yes, AFAIK these are used in cases where you do import * or to tell you that you shouldn't be importing something but it's python's shitty import system so you can do whatever you want.
 __all__ = ('Client',)
 
 
@@ -47,7 +47,7 @@ class Client(object):
     def using_es6(self):
         return False
 
-
+# I don't see a compelling reason to copy paste this rather than just re-use the same class for both es versions.
 class Elasticsearch6Client(object):
     """
     A convenience wrapper around a connection to Elasticsearch 6.x.
@@ -85,7 +85,7 @@ class Elasticsearch6Client(object):
         return self._conn
 
     @property
-    def using_es6(self):
+    def using_es6(self): # Seem like this is something that should be a setting in pyramid and not a property of the es client.
         return True
 
 
@@ -116,7 +116,7 @@ def get_client(settings):
     return Client(host, index, **kwargs)
 
 
-def get_es6_client(settings):
+def get_es6_client(settings): # These settings should be abstracted to a get_settings and used by both. I think this is gonna end up looking pretty much identical to my original connection PR.
     """Return a client for the Elasticsearch 6 index."""
     host = settings['es.url']
     index = settings['es.index']

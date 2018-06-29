@@ -132,7 +132,7 @@ class TestConfigureIndex(object):
 
     def test_sets_correct_mappings_and_settings(self, client):
         configure_index(client)
-
+		# I think it's generally best to avoid logic like this in tests. I would suggest putting this in a parametrize outside of the test.
         if client.using_es6:
             expected_ann_mapping = ES6_ANNOTATION_MAPPING
         else:
@@ -203,7 +203,7 @@ def captures(patterns, text):
 def groups(pattern, text):
     return re.search(pattern, text).groups() or []
 
-
+# This is slick but I think it also might be a little too magical. I'm not sure if you can do this but have you looked into paramtrizing the class as opposed to the fixture-that way your tests will know what version they are testing.
 @pytest.fixture(params=['es1', 'es6'])
 def client(request):
     client = mock.Mock(spec_set=['conn', 'index', 't', 'using_es6'])

@@ -46,7 +46,7 @@ class TestAddAnnotation(object):
         indexer.add_annotation('test-annotation-id')
 
         assert index.called is False
-
+# We should prob be using parametrize here
     def test_during_reindex_adds_to_current_index(self, fetch_annotation, annotation, index, celery, settings_service):
         settings_service.put(SETTING_NEW_INDEX, 'hypothesis-abcdef123')
         settings_service.put(SETTING_NEW_ES6_INDEX, 'hypothesis-xyz123')

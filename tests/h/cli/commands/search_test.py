@@ -26,7 +26,7 @@ class TestReindexCommand(object):
         index = patch('h.cli.commands.search.indexer')
         return index.reindex
 
-
+# seems like this could be a good use for parametrize in the already existing class.
 class TestReindexES6Command(object):
     @pytest.mark.usefixtures('reindex')
     def test_it_raises_timeout(self, cli, cliconfig):

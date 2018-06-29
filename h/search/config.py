@@ -363,7 +363,7 @@ def _random_id():
 def _get_mappings(client):
     """Return the document type mappings appropriate for a given ES version."""
     mappings = {}
-    if client.using_es6:
+    if client.using_es6: # This should be communicated from the top down. In the above code someone knows which client was passed therefore someone knows which es version is being used/which mapping we need.
         mappings = {client.t.annotation: ES6_ANNOTATION_MAPPING}
     else:
         mappings = {client.t.annotation: ANNOTATION_MAPPING}

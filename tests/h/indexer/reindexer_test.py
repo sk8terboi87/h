@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import mock
 import pytest
 
-from h.indexer.reindexer import reindex, SETTING_NEW_INDEX, SETTING_NEW_ES6_INDEX
+from h.indexer.reindexer import reindex, SETTING_NEW_INDEX, SETTING_NEW_ES6_INDEX # I really think passing these setting names around everywhere is a bit uneccesary. We don't do this anywhere else in the code for pyramid settings.
 from h.search import client
 
 

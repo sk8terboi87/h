@@ -11,7 +11,7 @@ from h.search.client import Client, Elasticsearch6Client
 
 
 class TestClient(object):
-
+# I assume this change was made in prep for using parametrize here as well.
     def test_it_sets_the_index_and_conn_properties(self, Client):
         client = Client(host="http://localhost:9200", index="hypothesis")
 
@@ -39,7 +39,7 @@ class TestClient(object):
     def Client(self, request):
         return request.param
 
-
+# Here again we could use parametrize so we don't have to copy paste the test class.
 class TestGetES6Client(object):
     def test_initializes_client_with_host(self, settings, patched_client):
         get_es6_client(settings)

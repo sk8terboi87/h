@@ -13,5 +13,5 @@ __all__ = (
     "es_connect",
     "init_elasticsearch",
     "delete_all_elasticsearch_documents",
-    "delete_all_elasticsearch6_documents",
+    "delete_all_elasticsearch6_documents", # I really think this needs to go away.
 )
